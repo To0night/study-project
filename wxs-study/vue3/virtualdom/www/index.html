@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div>
+        <button id="btn_1">其实可以写一个按钮来测试一下patch函数的不是吗</button>
+    </div>
+    <ul id="app" key="unique" data-index="我是所有node的容器">
+        一个普通文本
+    </ul>
+
+
+    <script>
+        // 用JavaScript对象来描述dom的层次结构
+        // diff算法就是为虚拟dom服务的，是虚拟dom的衍生产物。所以diff算法是作用在虚拟dom上而不是实际dom结构上的
+
+        // 首先  手写h函数
+
+
+        // diff算法特点
+        // 同级比较 最小更新
+
+        // 同级比较: 即使是同一个虚拟dom 层级不同 diff也会暴力删除后插入新节点
+
+        // 如何判断同一节点 ? 选择器相同且key相同
+
+
+        const wxs_h_fn = (nodeName, attributes, children, elm = null) => {
+
+            let virtualNodeObj = {}
+
+            if (nodeName === 'text') {
+                // 文本类虚拟节点
+                virtualNodeObj = {
+                    sel: 'text',
+                    data: {},
+                    key: attributes?.props?.key,
+                    children,
+                    elm
+                }
+            } else {
+                // node类虚拟节点
+                if (typeof children === 'string') {
+                    // 第三个参数为普通字符串，说明没有子节点
+                    virtualNodeObj = {
+                        sel: nodeName,
+                        data: attributes,
+                        key: attributes?.props?.key,
+                        children: [wxs_h_fn('text', { props: {} }, children)],
+                        elm
+                    }
+                }
+
+                if (typeof children === 'object' && Array.isArray(children)) {
+                    const childrenList = []
+                    children.forEach(item => {
+                        if (typeof item === 'string') {
+                            // 是文本节点
+                            childrenList.push(wxs_h_fn('text', {}, item))
+                        } else {
+                            // 是虚拟dom节点
+                            childrenList.push(item)
+                        }
+
+                    })
+                    // 第三个参数为数组，说明为嵌套h函数
+                    virtualNodeObj = {
+                        sel: nodeName,
+                        data: attributes,
+                        children: childrenList,
+                        key: attributes?.props?.key,
+                        elm
+                    }
+                }
+                if (typeof children === 'object' && !Array.isArray(children)) {
+                    // 第三个参数是虚拟dom
+                    virtualNodeObj = {
+                        sel: nodeName,
+                        data: attributes,
+                        children: [children],
+                        key: attributes?.props?.key,
+                        elm
+                    }
+                }
+            }
+
+
+
+
+
+            return virtualNodeObj
+        }
+
+
+
+
+        // 判断是同一个虚拟节点的标准,同tag名 同key
+        const sameNode = (oldNode, newNode) => {
+            return oldNode.sel === newNode.sel && oldNode.key === newNode.key
+        }
+
+        // 通过虚拟节点创建实际dom节点
+        const createActualElement = (vNode) => {
+            let actualDom = null
+            if (vNode.sel !== 'text') {
+                // 非文本节点 node节点
+                // 创建实际dom节点
+                actualDom = document.createElement(vNode.sel)
+
+                // 挂载dom节点属性
+                Object.entries(vNode?.data?.props || {}).forEach(item => {
+                    actualDom.setAttribute(item[0], item[1])
+                })
+            } else {
+                // 非node节点 文本节点
+                actualDom = document.createTextNode(vNode.children)
+            }
+
+            // 如果vNode的子节点是一个数组
+            if (Array.isArray(vNode.children) && vNode.children?.length) {
+                vNode.children.forEach(sonVNode => {
+                    if (!sonVNode.sel) {
+                        // 说明不是virtualDom节点 变成虚拟之后再转换
+                        actualDom.appendChild(createActualElement(wxs_h_fn('text', {}, sonVNode)))
+                    } else {
+                        // 是虚拟dom节点  直接转换
+                        actualDom.appendChild(createActualElement(sonVNode))
+                    }
+
+                })
+            }
+            return actualDom
+        }
+
+
+        // 通过实际dom节点创捷虚拟节点
+        const actualDom2VirtualDom = (actualDom) => {
+            const attributes = { props: {} }
+            Array.from(actualDom.attributes).forEach(item => {
+                attributes['props'][item.name] = item.value
+            })
+            let oldNodeChildren = []
+
+            const sonNodeList = Array.from(actualDom.childNodes)
+
+            if (actualDom.tagName === 'text') {
+                // 纯文本节点
+                return wxs_h_fn('text', attributes, actualDom.data, actualDom)
+            }
+
+
+            // 有多个子节点
+            sonNodeList.forEach(childNode => {
+                if (childNode.nodeType === 3) {
+                    // 特殊处理文本节点
+                    childNode.tagName = 'text'
+                    childNode.attributes = { props: {} }
+                }
+                if (!(childNode.nodeType === 3 && childNode.nodeValue.trim() === '')) {
+                    // 换行文本无须推入
+                    oldNodeChildren.push(actualDom2VirtualDom(childNode))
+                }
+
+            })
+            return wxs_h_fn(actualDom.tagName.toLowerCase(), attributes, oldNodeChildren, actualDom)
+
+        }
+
+
+        const patch = (oldVNode, newVNode) => {
+
+
+
+            if (!newVNode) {
+                // 说明旧虚拟dom子节点比新虚拟dom子节点要长
+                // 直接删除旧节点
+                // 删除原节点 
+                oldVNode.elm.parentNode.removeChild(oldVNode.elm)
+                return
+            }
+
+            if (Array.isArray(newVNode)) {
+                // 说明新虚拟dom子节点比旧虚拟dom子节点长
+                // 直接挂载新节点
+                // 挂载新节点
+                newVNode.forEach(newDom => {
+                    const newActualDom = createActualElement(newDom)
+                    oldVNode.elm.parentNode.insertBefore(newActualDom, oldVNode.elm)
+                })
+                oldVNode.elm.parentNode.removeChild(oldVNode.elm)
+                return
+            }
+
+            if (!oldVNode.sel) {
+                // 原vNode不存在vNode属性,说明原node是dom节点 需要创建dom节点
+                oldVNode = actualDom2VirtualDom(oldVNode)
+            }
+
+
+            if (!sameNode(oldVNode, newVNode) || (oldVNode.sel === newVNode.sel && newVNode.sel === 'text')) {
+
+                // 不是同一个虚拟节点 或者新旧节点都是文本节点 直接删除原节点 挂载新节点
+                // 创建新节点
+                const newActualDom = createActualElement(newVNode)
+                // 挂载新节点
+                oldVNode.elm.parentNode.insertBefore(newActualDom, oldVNode.elm)
+                // 删除原节点 
+                oldVNode.elm.parentNode.removeChild(oldVNode.elm)
+
+            } else {
+                // 是同一个虚拟节点  需要精细化比较更新
+                console.log(13312)
+                // 依次patch子节点
+                const oldChildren = oldVNode.children
+                const newChildren = newVNode.children
+                const nodeLength = Math.max(oldChildren.length, newChildren.length)
+                for (let i = 0; i < nodeLength; i++) {
+                    if (!oldChildren[i + 1] && newChildren[i + 1]) {
+                        patch(oldChildren[i], newChildren.splice(i))
+                        break
+                    }
+                    patch(oldChildren[i], newChildren[i])
+
+                    // if (!oldChildren[i + 1] && newChildren[i + 1]) {
+                    //     // 新子节点比旧子节点长 ，已经便利到最后一个
+                    //     patch(oldChildren[i], newChildren.splice(i))
+                    //     return
+                    // }
+                    // 依次patch子节点
+
+                }
+            }
+        }
+
+        const container = document.querySelector('#app')
+
+        // const virtualNode = wxs_h_fn('span', { props: { 'data-text': '我来做一个嵌套测试' } }, '一个普通文本')
+
+        const virtualNode = wxs_h_fn('ul', { props: { key: 'unique' } },
+            '？？？？？？')
+
+
+        document.querySelector('#btn_1').addEventListener('click', () => {
+            patch(container, virtualNode)
+        })
+
+
+    </script>
+
+</body>
+
+</html>

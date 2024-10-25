@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="app"></div>
+
+    <script src="./libs/react.js"></script>
+    <script src="./libs/react-dom.js"></script>
+    <script src="./libs/babel.js"></script>
+
+    <script type="text/babel">
+
+        console.log('打印一下react对象', React)
+        console.log('打印一下react-Dom对象', ReactDOM)
+        const SonComp = () => {
+            return (<>我是函数组件</>)
+        }
+
+        class SonComp_1 extends React.Component {
+            constructor(props) {
+                super(props)
+                this.state = {
+                    data: 0,
+                    counter: 0
+                }
+            }
+
+            componentDidMount() {
+                this.setState({
+                    counter: '1'
+                })
+
+                console.log("setState 1", this.state.counter);
+
+                setTimeout(() => {
+                    this.setState({
+                        counter: '2'
+                    })
+
+                    console.log("setState 2", this.state.counter);
+                })
+            }
+
+            clickHandle = () => {
+                // this.setState({
+                //     counter: this.state.counter + 2,
+                // })
+                // console.log('change State 1')
+                // this.setState({
+                //     counter: this.state.counter + 3,
+                // })
+                // console.log('change State 2')
+
+                setTimeout(() => {
+                    this.setState({
+                        counter: this.state.counter + 2,
+                    })
+                    console.log('change State 1')
+                    this.setState({
+                        counter: this.state.counter + 3,
+                    })
+                    console.log('change State 2')
+                }, 0)
+            }
+            render() {
+                console.log('render')
+                return (
+                    <>
+                        {this.state.counter}
+                        <br />
+                        <button onClick={this.clickHandle}>点击我修改state的值</button>
+                    </>
+                )
+            }
+        }
+
+        // console.log('react', React.Component)
+
+        const fiberDom = (
+            <div>
+                <span>
+                    我是第一个子节点
+                </span>
+                <br />
+                <SonComp />
+                <br />
+                <SonComp_1 />
+            </div>
+        )
+        
+        ReactDOM.render(fiberDom,document.querySelector('#app'))
+
+        // const rootFiber = ReactDOM.createRoot(document.querySelector('#app'))
+        // rootFiber.render(fiberDom)
+
+    </script>
+</body>
+
+</html>

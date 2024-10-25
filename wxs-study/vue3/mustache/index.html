@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script type="1232131" id="temp_1">
+       <div>
+            <ol>
+                {{#student}}
+                    <li>
+                        学生{{name}}的爱好是
+                        <ol>
+                            {{#hobbies}}
+                                {{.}}
+                            {{/hobbies}}
+                        </ol>
+                    </li>
+                {{/student}}
+            </ol>
+       </div>
+    </script>
+
+    <script type="123123" id="temp_2">
+        我今天买了新{{thing}},好{{mood}}
+    </script>
+
+    <script type="module">
+        // import mustache from './mustache.js'
+        const temp = document.querySelector('#temp_1').innerHTML
+
+        const temp_1 = `我今天买了新{{thing}},好{{mood}},额外测试{{a.b.c}}`
+        const temp_2 = `
+            <div>
+                <ol>
+                    {{#student}}
+                        <li>
+                            学生{{name}}的爱好是
+                            <ol>
+                                {{#hobbies}}
+                                    <li>{{.}}</li>
+                                {{/hobbies}}
+                            </ol>
+                        </li>
+                    {{/student}}
+                </ol>
+            </div>
+       `
+
+        //    上面的temp_2需要变成这样的token数组
+        const targetTempList = [
+            ['text', '<div><ol>'],
+            ['#', 'student',
+                ['text', '<li>学生'],
+                ["name", 'name'],
+                ['text', '的爱好是<ol>'],
+                ['#', "hobbies",
+                    ["text", "<li>"],
+                    ["name", "."],
+                    ["text", "</li>"]
+                ],
+                ['text', '</ol></li>']
+            ],
+            ['text', "</ol></div>"]
+        ]
+
+        const data = {
+            arr: [{
+                name: 'wxs',
+                gender: '男',
+                age: 24,
+                hobby: ['唱', '跳', '篮球']
+            }, {
+                name: 'wxs_1',
+                gender: '男',
+                age: 21
+            }]
+        }
+
+        // const data_1 = { thing: '鞋子', mood: '开心' }
+
+        // const result = mustache.render(temp, data)
+        // console.log(result)
+        // const result_2 = mustache.render(temp_1, data_1)
+        // document.querySelector('#container').innerHTML = result
+
+
+        const tempStr2token = (targetStr) => {
+            const tokensList = []
+            // 能匹配双引号及其包裹的内容
+            const NAME_REG_EXP = /\{\{[^\{\^\}]+\}\}/
+            // 匹配结果
+            let EXEC_RESULT;
+            while (EXEC_RESULT = NAME_REG_EXP.exec(targetStr)) {
+                // 字符串中还存在双引号
+                const tokenText = targetStr.slice(0, EXEC_RESULT.index)
+                // 推入text
+                tokensList.push(['text', tokenText])
+                const name_length = EXEC_RESULT[0].length
+                let tokenName = EXEC_RESULT[0].replace('{{', '').replace('}}', '')
+                // 对于二维数组需要对name首位字符是不是#做差异化处理
+                if (tokenName[0] !== '#') {
+                    // 非#号 表示非数组 普通name值 
+                    // 推入name
+                    tokensList.push(['name', tokenName])
+                    // 将已经匹配过的内容截断
+                    targetStr = targetStr.slice(EXEC_RESULT.index + name_length)
+                }
+                if (tokenName[0] === '#') {
+                    // 是#号 取得name值
+                    tokenName = tokenName.replace('#', '')
+                    // 匹配字符串的起步位置
+                    const LIST_START_INDEX = targetStr.indexOf(`{{#${tokenName}}}`)
+                    // 匹配字符串的结束位置
+                    const LIST_END_INDEX = targetStr.indexOf(`{{\/${tokenName}}}`)
+                    // 起始位置和结束位置中间的就是下一层需要遍历的字符串
+                    const NEXT_LEVEL_TARGET_STR = targetStr.slice(LIST_START_INDEX + 5 + tokenName.length, LIST_END_INDEX)
+                    tokensList.push(['#', tokenName, tempStr2token(NEXT_LEVEL_TARGET_STR)])
+                    targetStr = targetStr.replace(tokenText, '').replace(`{{#${tokenName}}}`, '').replace(`{{\/${tokenName}}}`, '').replace(NEXT_LEVEL_TARGET_STR, '')
+                }
+            }
+            // 推入剩余字符串
+            tokensList.push(['text', targetStr])
+            return tokensList
+        }
+
+        const token2dom = (list, data) => {
+            let dom = ''
+            list.forEach(item => {
+                // 不是数组的普通对象
+                if (item[0] === 'text') {
+                    // 普通文字
+                    dom += item[1]
+                }
+
+                if (item[0] === 'name') {
+                    // 插值表达式
+                    if (typeof data === 'object') {
+                        if (!item[1].indexOf('.')) {
+                            // 普通属性值
+                            dom += data[item[1]]
+                        } else {
+                            // 特殊属性值 类似于a.b.c
+                            dom += item[1].split('.').reduce((pre, cur) => pre[cur], data)
+                        }
+
+                    } else {
+                        dom += data
+                    }
+
+                }
+
+                if (item[0] === '#') {
+                    //说明是数组
+                    data[item[1]].forEach(item_1 => {
+                        dom += token2dom(item[2], item_1)
+                    })
+                    // dom += token2dom(item[2], data[item[1]])
+                }
+            });
+            return dom
+        }
+
+        const resourceData = {
+            student: [{
+                name: 'wxs',
+                hobbies: ['唱', '跳', 'rap']
+            },
+            {
+                name: 'mll',
+                hobbies: ['唱', '看柯南']
+            }]
+        }
+
+        const tokenList = tempStr2token(temp_2)
+
+        const domStr = token2dom(tokenList, resourceData)
+
+        console.log(domStr)
+    </script>
+
+</body>
+
+</html>

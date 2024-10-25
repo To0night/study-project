@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        #app {
+            height: 3000px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        {{ age }}
+        <span>{{ name }}</span>
+        <span>数组测试{{ array }}</span>
+        <input x-model="name">
+    </div>
+
+    <button id="btn">点击我改变data值</button>
+</body>
+
+<script type="module">
+    import Vue from './xVue.js'
+
+    const vm = new Vue({
+        el: "#app",
+        data() {
+            return {
+                name: 'wxs',
+                age: 25,
+                other: {
+                    job: 'pcWorker'
+                },
+                array:[1,2,3,4]
+            }
+        }
+    })
+
+    document.querySelector('#btn').addEventListener('click', () => {
+        vm.name = '随便改一下改一下'
+    })
+</script>
+
+
+
+<script>
+
+
+    const callback = function(){
+        console.log(this)
+    }
+
+    // 每2秒触发一次
+    const debounce = (fn, timer = 1000) => {
+        return () => {
+            if (!fn.tId) {
+                fn.tId = setTimeout(() => {
+                    fn()
+                    clearTimeout(fn.tId)
+                    fn.tId = null
+                }, timer)
+
+            }
+        }
+    }
+
+    window.addEventListener('scroll', debounce(() => {
+        console.log(1)
+    }))
+
+
+
+</script>
+
+</html>

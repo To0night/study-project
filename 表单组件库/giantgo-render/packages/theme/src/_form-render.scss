@@ -1,0 +1,41 @@
+.form-render {
+  position: relative;
+  padding: 10px 2px 2px 2px;
+  height: 100%;
+  overflow: auto;
+
+  .el-input,
+  .el-input__inner,
+  .el-select,
+  .el-cascader,
+  .el-slider,
+  .el-date-editor.el-input,
+  .el-date-editor.el-input__wrapper {
+    width: 100%;
+  }
+
+  .form-item {
+    display: inline-block;
+    width: 100%;
+    line-height: 0px;
+    vertical-align: top;
+    margin-bottom: 18px;
+
+    .el-form-item {
+      margin: 0px;
+    }
+  }
+
+  .btn-submit {
+    margin-top: 10px;
+    text-align: center;
+  }
+
+  .form-rate {
+    line-height: 2;
+  }
+
+  .el-divider {
+    margin: 6px 0;
+  }
+}

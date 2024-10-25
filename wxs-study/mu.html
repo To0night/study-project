@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!-- import CSS -->
+    <style>
+        .good-class {
+            width: 100%;
+            height: 600px;
+            background-color: pink;
+            margin-bottom: 10px;
+        }
+
+
+        #father {
+            height: 100px;
+            width: 100px;
+            background-color: bisque;
+            position: absolute;
+            left: 0px;
+        }
+
+        #son {
+            height: 100px;
+            width: 100px;
+            background-color: aquamarine;
+            position: absolute;
+            left: 0px;
+            top: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="father">
+        father
+    </div>
+
+    <div id="son">
+        son
+    </div>
+</body>
+
+
+
+<script>
+
+    // 现有树结构如下 
+    const treeNode = {
+        id: 'uid',
+        title: 'string',
+        selected: 'boolean'
+    }
+
+    //  过滤出节点为选中状态(包括子节点)的节点树
+    // 如
+    const treeData = [
+        {
+            id: 1,
+            title: "1",
+            selected: false,
+            children: [{
+                id: 2,
+                title: "2",
+                selected: true,
+            }],
+        },
+        {
+            id: 3,
+            title: "3",
+            selected: false,
+        },
+        {
+            id: 4,
+            title: "4",
+            selected: true,
+        },
+    ]
+
+    // 过滤后应为
+    const filterData = [
+        {
+            id: 1,
+            title: "1",
+            selected: false,
+            children: [{
+                id: 2,
+                title: "2",
+                selected: true,
+            }],
+        },
+        {
+            id: 4,
+            title: "4",
+            selected: true,
+        },
+    ]
+
+    const transformData = (list) => {
+        const targetResult = []
+        const deepSearch = (array = []) => {
+            if (array.some(item => item.selected)) {
+                return true
+            } else {
+                return array.some(item => {
+                    if (!item.children) {
+                        return false
+                    } else {
+                        return deepSearch(item.children)
+                    }
+                })
+            }
+            return false
+        }
+        list.forEach(item => {
+            if (item.selected || deepSearch(item.children)) {
+                targetResult.push(item)
+            }
+        })
+        return targetResult
+    }
+
+    const target = transformData(treeData)
+
+
+
+</script>
+
+</html>

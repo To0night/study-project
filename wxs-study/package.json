@@ -1,0 +1,19 @@
+{
+    "scripts": {
+        "start": "npm run dev",
+        "dev": "npx webpack serve --config ./config/webpack.config.js",
+        "build": "npx webpack --config ./config/webpack.build.js",
+        "test": "npx webpack --config ./config/webpack.test.js",
+        "ts": "npx webpack serve --config ./config/webpack.ts.js --open"
+    },
+    "devDependencies": {
+        "css-loader": "^6.7.1",
+        "html-webpack-plugin": "^5.5.0",
+        "less-loader": "^11.0.0",
+        "mini-css-extract-plugin": "^2.6.1",
+        "style-loader": "^3.3.1",
+        "ts-loader": "^9.3.1",
+        "webpack-cli": "^4.10.0",
+        "webpack-dev-server": "^4.9.3"
+    }
+}

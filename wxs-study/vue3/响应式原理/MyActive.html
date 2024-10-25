@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <script>
+        const obj = {
+            name: 'wxs'
+        }
+
+        class Dep {
+            constructor() {
+                // 保存响应式数据的所有依赖，这里的依赖就是watcher实例
+                this.depList = []
+            }
+
+            addDep(watcher) {
+                this.depList.push(watcher)
+            }
+
+            notice() {
+                this.depList.forEach(item => {
+                    item.update()
+                })
+            }
+        }
+
+        class Observe {
+            constructor(target) {
+                // 不是对象类型不需要进行响应化
+                if (typeof target !== "object") return
+                Object.entries(target).forEach(item => {
+                    const dep = new Dep()
+                    Object.defineProperty(target, item[0], {
+                        get() {
+                            if (Dep.target) {
+                                dep.depList.push(Dep.target)
+                            }
+                            return item[1]
+                        },
+                        set(newValue) {
+                            if (typeof newValue === "object") observe(newValue)
+                            item[1] = newValue
+                            dep.notice()
+                        }
+                    })
+                })
+            }
+        }
+
+        // 将普通对象变成响应式对象的函数
+        const observe = (target) => {
+            new Observe(target)
+        }
+
+        class Watcher {
+            constructor(target, key, callback) {
+                // 参数依次是，监听的对象，监听的key，对象发生改变的回调函数
+                this.target = target
+                this.key = key
+                this.callback = callback
+                // 获取值，触发响应式对象的get函数
+                this.value = this.getValue()
+                Dep.target = null
+            }
+            getValue() {
+                Dep.target = this
+                return this.target[this.key]
+            }
+            update() {
+                this.callback.call(this, this.key)
+            }
+        }
+
+        observe(obj)
+
+
+        new Watcher(obj, 'name', function (key) {
+            console.log(`假装自己是一个更新函数，${key}从${this.value}变成了${this.target[this.key]}`)
+        })
+
+
+
+
+
+    </script>
+</body>
+
+</html>

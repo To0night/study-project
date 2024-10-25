@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <script>
+        const resultList = {}
+        const list = [1, 2, [3, [4, 5], 6], 7, [8], 9]
+        const list2Object = (resultObject, list) => {
+            // 如果是数组
+            resultObject.children = []
+            list.forEach(item => {
+                if (!Array.isArray(item)) {
+                    // 非数组对象 直接推入
+                    resultObject.children.push({
+                        value: item
+                    })
+                } else {
+                    resultObject.children.push(list2Object({}, item))
+                    // 数组对象 递归推入
+                }
+            })
+            return resultObject
+        }
+        list2Object(resultList, list)
+
+        const smartRepeat = (targetStr) => {
+            // 当前栈 保存当前遍历结果
+            let currentStack = []
+            // 数量栈
+            const countStack = []
+            // 结果栈
+            let resultList = []
+
+            for (let i = 0; i < targetStr.length; i++) {
+                if (targetStr[i] === '[') {
+                    // 数字
+                    countStack.push(Number(currentStack.join('')))
+                    currentStack = []
+                    continue;
+                }
+
+                if (targetStr[i] === ']') {
+                    // 右括号 开始执行repeat操作
+                    const repeatCount = countStack.pop()
+                    const repeatWord = currentStack.join('')
+                    if (repeatWord) {
+                        // 如果字母栈不是空，说明需要重复字母
+                        resultList.push(new Array(repeatCount).fill(repeatWord).join(''))
+                    } else {
+                        // 如果字母栈是空的，说明需要重复当前整段
+                        resultList = new Array(repeatCount).fill(resultList.join(''))
+                    }
+                    // 重置字符栈
+                    currentStack = []
+                    continue;
+                }
+                currentStack.push(targetStr[i])
+
+            }
+            return resultList.join('')
+        }
+
+
+        // console.log(smartRepeat('3[2[ab]2[b]]'))
+        // console.log(smartRepeat('2[1[a]3[b]2[3[c]4[d]]]'))
+        // console.log(smartRepeat('2[2[2[a]2[b]2[c]]]'))
+
+        const tempDomStr = `
+            <div>
+                <h1><span>12313</span></h1>
+                <ul>
+                    <li>这是第一个li</li>
+                    <li>这是第二个li</li>
+                </ul>
+            </div>`
+        // <h1><span>这是一个大标签</span></h1> 
+        //         <ul>
+        //             <li>这是第一个li</li>
+        //             <li>这是第二个li</li>
+        //             <li>这是第三个li</li>
+        //         </ul>
+
+        const parse = (targetStr) => {
+
+            let resultObject = null
+            // 标签开始标记
+            let tagStart = false
+
+            // 当前指针
+            let currentPoint = null
+
+            let endStart = false
+            // 标签结束标记
+            let tagEnd = false
+            // 保存当前正在遍历的tag
+            let currentTag = []
+            let tagStack = []
+            let currentDomStr = []
+
+
+            for (let i = 0; i < targetStr.length; i++) {
+                if (targetStr[i] === '' || targetStr[i] === '/') {
+                    // 空字符串跳过
+                    continue;
+                }
+                if (targetStr[i] === '<' && targetStr[i + 1] !== '/') {
+                    // tag开始标记
+                    tagStart = true
+                    endStart = false
+                    continue;
+                }
+
+                if (targetStr[i] === '<' && targetStr[i + 1] === '/') {
+                    // tag结束标记
+                    tagStart = false
+                    endStart = true
+                    continue;
+                }
+
+                if (targetStr[i] === '>') {
+                    const currentEndTag = currentTag.join('')
+                    if (tagStart) {
+                        // 开始标签结束啦
+                        if (resultObject === null) {
+                            resultObject = {
+                                tagName: currentEndTag,
+                                value: '',
+                                children: []
+                            }
+                            currentPoint = resultObject
+                        } else {
+                            currentPoint.children.push({
+                                tagName: currentEndTag,
+                                value: '',
+                                children: []
+                            })
+                            // 指向最后一个children节点
+                            currentPoint = currentPoint.children[currentPoint.children.length - 1]
+                        }
+                        tagStack.push(currentPoint)
+                    }
+                    if (endStart) {
+                        currentPoint.value = currentDomStr.join('')
+                        if (tagStack.length !== 1) {
+                            tagStack.pop()
+                            currentPoint = tagStack[tagStack.length - 1]
+                        }
+
+                        // 结束标签结束啦
+                    }
+                    tagStart = false
+                    endStart = false
+                    currentTag = []
+                    currentDomStr = []
+                    continue;
+                }
+                if (tagStart || endStart) {
+                    // 遍历标签名  把标签名存起来
+                    currentTag.push(targetStr[i])
+                    continue;
+                } else {
+                    // 遍历字符内容
+                    currentDomStr.push(targetStr[i])
+                }
+            }
+            return resultObject
+        }
+
+        console.log(parse(tempDomStr))
+
+
+    </script>
+</body>
+
+</html>
